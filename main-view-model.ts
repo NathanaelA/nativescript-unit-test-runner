@@ -49,6 +49,7 @@ export class TestBrokerViewModel extends observable.Observable {
     private karmaRequestedRun: boolean;
     private baseUrl: string;
     private testResults: observableArray.ObservableArray<any>;
+	private requiredTests: any; // A link to all required tests (For NodeUnit)
 
     private socket: any; //socket.io socket
     private config: any; //karma config
@@ -58,6 +59,7 @@ export class TestBrokerViewModel extends observable.Observable {
         super();
 
         global.__karma__ = this;
+		this.requiredTests = {};
 
         if (config.options.debugTransport) {
             enableSocketIoDebugging();
@@ -211,6 +213,13 @@ export class TestBrokerViewModel extends observable.Observable {
         this.executed = true;
 
         this.set('goToTestsText', 'View Test Run');
+		
+		// Attempt to load a load Setup routine if it exists
+		try {
+			require("~/testSetup");
+		} catch (err) {
+			// Do Nothing if setup doesn't exist
+		}
 
         this.startEmitted = false;
         this.hasError = false;
@@ -252,7 +261,7 @@ export class TestBrokerViewModel extends observable.Observable {
                 try {
                     if (script.localPath) {
                         console.log('NSUTR: require script ' + script.url + ' from ' + script.localPath);
-                        require(script.localPath);
+						this.requiredTests[script.localPath] = require(script.localPath);
                     } else {
                         console.log('NSUTR: eval script ' + script.url);
                         this.loadShim(script.url);
